@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" ng-app='weather'>
+    <head>
+    <meta charset="utf-8">
+        <title>Weather Report</title>
+          <script src="js/angular.js"></script>
+          <script src="js/angular-resource.js"></script>
+          <script src="weather.js"></script>
+          <script src="js/xml2json.js"></script>
+           <script type="text/javascript" 
+                src="js/jquery-1.8.0.min.js"></script>
+        <script type="text/javascript" 
+                src="js/jquery-ui-1.8.23.custom.min.js"></script>
+                 <script src="js/db.js"></script>
+  <script src="js/app.js"></script>
+        <link type="text/css" rel="stylesheet" href="weather.css">
+         <link type="text/css" href="css/jquery-ui-1.8.23.custom.css" 
+                rel="stylesheet" />
+        <style>
+		
+      #map-canvas {
+        height: 370px;
+		width:480px;
+        margin-top: -190px;
+		margin-left:70px;
+		-moz-border-radius: 10px;
+-webkit-border-radius: 10px;
+border-radius: 10px; /* future proofing */
+    
+      }
+	  #page-wrapper {
+  width: 260px;
+  margin: 2.5em auto;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  border-radius: 3px;
+  background:yellow;
+  -webkit-transform: rotate(2deg);
+	-moz-transform: rotate(2deg);
+	-o-transform: rotate(2deg);
+	-ms-transform: rotate(2deg);
+	transform: rotate(2deg);
+	color:#505050;
+}
+
+#page-wrapper:hover{
+-webkit-box-shadow: 5px 5px 6px rgba(0, 0, 0, 0.4);
+	-moz-box-shadow: 5px 5px 6px rgba(0, 0, 0, 0.4);
+	-o-box-shadow: 5px 5px 6px rgba(0, 0, 0, 0.4);
+	-webkit-transform: rotate(0deg) scale(1.25);
+	-moz-transform: rotate(0deg) scale(1.25);
+	-o-transform: rotate(0deg) scale(1.25);
+	-ms-transform: rotate(0deg) scale(1.25);
+	transform: rotate(0deg) scale(1.25);
+	z-index: 10;
+}
+
+#new-todo-form {
+  padding: 0.5em;
+  z-index:-1;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  align:center;
+  background:#c0c0c0;
+}
+    
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+    <script>
+	//Google Map Code to implement gelocation
+var geocoder;
+var map;
+function initialize() {
+  geocoder = new google.maps.Geocoder();
+  var latlng = new google.maps.LatLng(42.19,-71.05);
+  var mapOptions = {
+    zoom: 8,
+    center: latlng
+  }
+  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+}
+
+function codeAddress() {
+  var address = document.getElementById('address').value;
+  geocoder.geocode( { 'address': address}, function(results, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
+      map.setCenter(results[0].geometry.location);
+      var marker = new google.maps.Marker({
+          map: map,
+          position: results[0].geometry.location
+      });
+    } else {
+      alert('Geocode was not successful for the following reason: ' + status);
+    }
+  });
+  
+ //control the tab present
+	var num = document.getElementById('days').value;
+	var i;
+	for(i=1;i<6;i++){
+		document.querySelector("#li"+i).style.display="block";
+	}
+	for(i=parseInt(num)+1;i<6;i++){
+		document.querySelector("#li"+i).style.display="none";
+	}
+}
+
+			
+google.maps.event.addDomListener(window, 'load', initialize);
+
+    </script>     
+    <!--Jquery UI script in initial page-->    
+		<script type="text/javascript">
+			$(function(){
+			 	 $("#target").tabs();
+				 document.querySelector("#li4").style.display="none";
+				 document.querySelector("#li5").style.display="none";
+			});
+			
+			
+		</script>
+    </head>
+    <body>
+    <!--Set the background video attribute-->
+    <video autoplay loop id="cloud" style="position:fixed;right:0;top:0;left:0;height:auto;width:100%;z-index:-100;">
+    <source type="video/webm" src="cloud.mov">
+    </video>
+    <!--use HTML SVG to present rain bow font-->
+        <svg width="1500" height="130" >
+          <defs>
+            <path id="path1" d="M 240,110 Q 700,0 1000,230"
+                fill="none" stroke="#000000" stroke-width="4">
+           </path>
+		  
+              <linearGradient id="gradient1">
+                  <stop offset="10%" stop-color="#FF0000"></stop>
+                  <stop offset="50%" stop-color="#00FF00"></stop>
+                  <stop offset="60%" stop-color="#FF69B4"></stop>
+                  <stop offset="100%" stop-color="#0000FF"></stop>
+              </linearGradient> 
+          </defs>    
+        
+		
+           <text font-family="san-serif" font-size="50px" font-weight="bold"
+              fill="url(#gradient1)" >
+                <textPath xlink:href="#path1">
+                    City Weather Forecast
+                </textPath>
+           </text>
+        </svg>
+        <!--User input form to get input data-->
+       <div ng-controller="DataController" ng-init="">
+       <div>
+         <form style="margin-left:300px;font-size:30px;font-weight:bold;color:#330066;">
+             City/Zip: <input style="font-size:20px;" type="text" ng-model="city" 
+                class="rounded" id="address"><br><br>
+           <span style="margin-left:-35px;">In Days<span style="font-size:18px;">(2-5)</span> :   <input style="font-size:20px;" size="5" type="text" ng-model="days" id="days" class="rounded">
+             <button style="margin-left:20px;width:8em;height:3em;" class="rounded" ng-click="getData()" onclick="codeAddress()" >
+                 <span style="font-size:20px"><i>Go!</i></span></button></span>
+        </form>
+        <!-- Interactive Show--> 
+    <div style="margin-top:-25px;float:right;font-size:24px;margin-right:50px;color:#330066;font-weight:bold;">Now, you are searching the weather in <span style="font-weight:bold;color:yellow;">{{city}}</span> within <span style="font-weight:bold;color:yellow;">{{days}}</span> days</div>
+     </div>
+        <hr>
+        <!-- Show the data from API-->
+        <div style="margin-left:20px;margin-right:20px;position:relative;">
+        <div style="position:relative;z-index:1;">
+        <span style="font-size:26px;margin-left:120px;margin-top:10px;color:#505050;font-weight:bold;">{{items.request.query}}</span><br>
+        <span style="font-size:26px;margin-left:120px;margin-top:10px;color:#505050;font-weight:bold;">{{items.current_condition.observation_time}}</span>
+        <div>
+         <img src='{{items.current_condition.weatherIconUrl.__cdata}}' height='200' width='250' style="margin-left:120px;margin-top:20px;">
+        </div>
+        <div style="margin-left:450px;margin-top:-200px;font-size:50px;">{{items.current_condition.temp_F}} &deg;F| {{items.current_condition.temp_C}} &deg;C
+        <br><br>
+        <div style="margin-top:-20px;font-size:30px;font-weight:bold;color:black;">
+        {{items.current_condition.weatherDesc.__cdata}}</div>
+        <div  style="margin-top:10px;font-size:20px;color:#404040;">
+        Wind: {{items.current_condition.windspeedKmph}} kmph &nbsp;&nbsp;
+        Humidity: {{items.current_condition.humidity}}
+        </div>
+        <div  style="font-size:20px;color:#404040;">
+        Visibility: {{items.current_condition.visibility}} &nbsp;&nbsp;&nbsp;
+        Cloud Cover: {{items.current_condition.cloudcover}}
+        </div>    
+        </div>
+        </div>
+        <div style="width:700px;float:left;margin-top:10px;margin-left:110px;">
+        ---------------------------------------------------------------------------------------------------------------
+        <table border="1" style="width:620px;font-color:black;z-index:1;position:relative">
+        <thead>
+        <tr>
+        <th ng-repeat="sday in items.weather" style="font-size:18px;">
+        {{sday.date}} 
+        </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+        <td ng-repeat="sday in items.weather" align="center">
+       <img src='{{sday.weatherIconUrl.__cdata}}' width='100' height='80'>
+        </td>
+        </tr>
+        <tr>
+        <td ng-repeat="sday in items.weather" align="center" style="font-size:26px;">
+        {{sday.tempMinF}}&deg;F - {{sday.tempMaxF}}&deg;F
+        </td>
+        </tr>
+        </tbody>
+        </table>
+        </div>
+         <div id="map-canvas"  style="z-index:1;position:relative"></div>
+         <div style="margin-left:110px;float:left;height:300px; ">
+         --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+         <!--Set the tag data-->
+         <div id="target" style="z-index:1;position:relative;opacity:0.65;width:800px;">
+         <ul>
+                 
+                    <li id="li1">
+                        <a href="#tab1">{{items.weather[0].date}}</a>
+                    </li>  
+                    <li id="li2">
+                        <a href="#tab2">{{items.weather[1].date}}</a>
+                    </li> 
+                    <li id="li3">
+                        <a href="#tab3">{{items.weather[2].date}}</a>
+                    </li> 
+                    <li id="li4">
+                        <a href="#tab4">{{items.weather[3].date}}</a>
+                    </li> 
+                    <li id="li5">
+                        <a href="#tab5">{{items.weather[4].date}}</a>
+                    </li>   
+                </ul>
+      <!--set the data in today's tag-->          
+                <div id="tab1">
+                <img src='{{items.weather[0].weatherIconUrl.__cdata}}' width='200' height='180' style="float:left;">
+               <span style="font-size:30px;margin-left:30px;float:left;margin-top:15px;">  {{items.weather[0].tempMinF}}&deg;F - {{items.weather[0].tempMaxF}}&deg;F | {{items.weather[0].tempMinC}}&deg;C - {{items.weather[0].tempMaxC}}&deg;C 
+                   
+                  <span style="font-size:26px; font-weight:bold;"> <br>{{items.weather[0].weatherDesc.__cdata}}</span>
+                  </span>
+                  <br><br><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                 <span style="color:#0000ff"> Wind Speed Miles: {{items.weather[0].windspeedMiles}} miles. &nbsp;&nbsp;&nbsp;
+                   Wind Speed Direction: {{items.weather[0].winddirection}} <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   Wind Direction Degree: {{items.weather[0].winddirDegree}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   PrecipMM: {{items.weather[0].precipMM}}
+                    </span>
+                   
+                </div>
+           <!--set the data in second day's tag--> 
+                <div id="tab2">
+                    <img src='{{items.weather[1].weatherIconUrl.__cdata}}' width='200' height='180' style="float:left;">
+               <span style="font-size:30px;margin-left:30px;float:left;margin-top:15px;">  {{items.weather[1].tempMinF}}&deg;F - {{items.weather[1].tempMaxF}}&deg;F | {{items.weather[1].tempMinC}}&deg;C - {{items.weather[1].tempMaxC}}&deg;C 
+                    
+                  <span style="font-size:26px; font-weight:bold;"> <br>{{items.weather[1].weatherDesc.__cdata}}</span>
+                  </span>
+                  <br><br><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                 <span style="color:#0000ff"> Wind Speed Miles: {{items.weather[1].windspeedMiles}} miles. &nbsp;&nbsp;&nbsp;
+                   Wind Speed Direction: {{items.weather[1].winddirection}} <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   Wind Direction Degree: {{items.weather[1].winddirDegree}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   PrecipMM: {{items.weather[1].precipMM}}
+                    </span>
+                </div>
+           <!--set the data in third day's tag--> 
+                <div id="tab3">
+                    <img src='{{items.weather[2].weatherIconUrl.__cdata}}' width='200' height='180' style="float:left;">
+               <span style="font-size:30px;margin-left:30px;float:left;margin-top:15px;">  {{items.weather[2].tempMinF}}&deg;F - {{items.weather[2].tempMaxF}}&deg;F | {{items.weather[2].tempMinC}}&deg;C - {{items.weather[2].tempMaxC}}&deg;C 
+                    
+                  <span style="font-size:26px; font-weight:bold;"> <br>{{items.weather[2].weatherDesc.__cdata}}</span>
+                  </span>
+                  <br><br><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                 <span style="color:#0000ff"> Wind Speed Miles: {{items.weather[2].windspeedMiles}} miles. &nbsp;&nbsp;&nbsp;
+                   Wind Speed Direction: {{items.weather[2].winddirection}} <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   Wind Direction Degree: {{items.weather[2].winddirDegree}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   PrecipMM: {{items.weather[2].precipMM}}
+                    </span>
+                </div>
+         <!--set the data in fourth day's tag--> 
+                <div id="tab4">
+                    <img src='{{items.weather[3].weatherIconUrl.__cdata}}' width='200' height='180' style="float:left;">
+               <span style="font-size:30px;margin-left:30px;float:left;margin-top:15px;">   {{items.weather[3].tempMinF}}&deg;F - {{items.weather[3].tempMaxF}}&deg;F | {{items.weather[3].tempMinC}}&deg;C - {{items.weather[3].tempMaxC}}&deg;C 
+                   
+                  <span style="font-size:26px; font-weight:bold;"> <br>{{items.weather[3].weatherDesc.__cdata}}</span>
+                  </span>
+                  <br><br><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                 <span style="color:#0000ff"> Wind Speed Miles: {{items.weather[3].windspeedMiles}} miles. &nbsp;&nbsp;&nbsp;
+                   Wind Speed Direction: {{items.weather[3].winddirection}} <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   Wind Direction Degree: {{items.weather[3].winddirDegree}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   PrecipMM: {{items.weather[3].precipMM}}
+                    </span>
+                </div>
+           <!--set the data in fifth day's tag--> 
+                <div id="tab5">
+                    <img src='{{items.weather[4].weatherIconUrl.__cdata}}' width='200' height='180' style="float:left;">
+               <span style="font-size:30px;margin-left:30px;float:left;margin-top:15px;">  {{items.weather[4].tempMinF}}&deg;F - {{items.weather[4].tempMaxF}}&deg;F | {{items.weather[4].tempMinC}}&deg;C - {{items.weather[4].tempMaxC}}&deg;C 
+                    
+                  <span style="font-size:26px; font-weight:bold;"> <br>{{items.weather[4].weatherDesc.__cdata}}</span>
+                  </span>
+                  <br><br><br><br><br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                 <span style="color:#0000ff"> Wind Speed Miles: {{items.weather[4].windspeedMiles}} miles. &nbsp;&nbsp;&nbsp;
+                   Wind Speed Direction: {{items.weather[4].winddirection}} <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   Wind Direction Degree: {{items.weather[4].winddirDegree}} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                   PrecipMM: {{items.weather[4].precipMM}}
+                    </span>
+                </div>         
+         </div>
+         <!-- set the sticky notes -->
+          <div id="page-wrapper" style="float:right;margin-right:25px;margin-top:-240px;z-index:2;position:relative;opacity:0.75;font-size:20px;">
+    <!-- Form for new Todo Items -->
+    <form id="new-todo-form" method="POST" action="#">
+      <input type="text" style="width:230px;font-size:20px;" name="new-todo" id="new-todo" placeholder="Enter Today Tips..." required>
+    </form>
+
+    <!-- Todo Item List -->
+    <ul id="todo-items"></ul>
+  </div>
+         </div>
+        <div  style="position:absolute;background:#c0c0c0;opacity:0.5;height:780px;top:0;left:0;right:0;">      
+        </div>
+        </div>
+    </div>
+        
+      <div style="float:right;width:1360px;margin-top:30px;margin-right:15px;">  
+     <hr>
+     <span style="font-size:20px;float:right;margin-right:20px;">Designed By Jiarui Hu</span>   
+        </div>
+        
+    </body>
+</html>
+
